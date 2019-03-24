@@ -1,0 +1,206 @@
+#!/usr/bin/env bash
+
+#=============================CABEÇALHO======================================|
+#
+#  AUTOR
+#     Felipe Fernandes <felipefernandesgsc@gmail.com>
+#
+#  PROGRAMA
+#     Diario
+#
+#  DATA DE CRIAÇÃO
+#     11/03/2019
+#
+#  DESCRIÇÃO
+#     Realiza a criação e organização de um diário, fornecendo serviço de
+#   backup utilizando um e-mail para salvar.
+#
+#  FUNCIONAMENTO
+#     Para a criação e edição do diário é feita utilizando arquivos txts, sen-
+#   do editado por um editor de texto da preferência do usuário, o nome do ar-
+#   quivo é a data do dia em que ele foi criado, para uma fácil organização.
+#     O serviço de backup é feito utilizando o programa mutt, que precisa es-
+#   tar instalado e configurado previamente, além disso será necessário regis-
+#   trar um e-mail de backup, pois é onde que será enviado os diários.
+#
+#============================================================================|
+
+#==========================================TESTES
+
+#Testa existência do diretório de armazenamento dos diarios
+if [ ! -d $HOME/.diario ]
+   then
+   echo -e "Não foi encontrado o diretório de armazenamento dos diários \nCriando...\n\n"
+   mkdir $HOME/.diario 2> /dev/null || echo -e "Não foi possível criar o diretório de armazenamento dos diários \nCorrija o erro e reinicie este programa"
+   sleep 2
+fi
+
+#Testa a existência do arquivo de configurações
+if [ ! -e $HOME/.diario/config.txt ]
+   then
+   echo -e "Não foi encontrado o arquivo de configuração\nCriando..." ; sleep 3
+   touch $HOME/.diario/config.txt || echo -e "Não foi possível criar o arquivo de configurações em /$HOME/.diario/ \nResolva o problema e reinicie este programa"
+   echo -e "\n\nConfiguração do serviço de backup\n"
+   read -p "Digite para qual e-mail será enviado os arquivos de backup: " email_backup
+   echo "email_backup=\"${email_backup}\"" > $HOME/.diario/config.txt
+   echo -e "\n\nConfiguração do editor de texto\n"
+   read -p "Digite o nome do editor de texto que será usado (nome de chamada no terminal): " editor
+       if [ ! -n "$editor" ]
+	then
+	echo "editor=\"nano\"" >> $HOME/.diario/config.txt 
+	echo "Nenhum editor inserido, definido nano como padrão"
+	   else
+   	   echo "editor=\"${editor}\"" >> $HOME/.diario/config.txt
+       fi
+   echo -e "\nAs configurações poderão ser alteradas no arquivo de configurações localizado em $HOME/.diario/config.txt"
+   sleep 5
+fi
+
+#Verifica se o programa de envio de e-mail para backup está instalado
+if [ ! -n "$(which mutt)" ]
+   then
+   echo -e "\n\nPrograma \"mutt\" que é utilizado para o serviço de backup não está instalado em sua máquina"
+   echo "Por favor, efetue a instalação e sua respectiva configuração"
+   echo "Caso contrário o serviço de backup não funcionará"
+   read -p "Pressione ENTER para prosseguir"
+fi
+#================================================
+
+#=======================================VARIAVEIS
+source $HOME/.diario/config.txt 2> /dev/null 
+#================================================
+
+#=========================================FUNCOES
+
+_LOGO()
+{
+clear
+cat << END
+██████╗ ██╗ █████╗ ██████╗ ██╗ ██████╗ 		|
+██╔══██╗██║██╔══██╗██╔══██╗██║██╔═══██╗		|
+██║  ██║██║███████║██████╔╝██║██║   ██║		|    Digite: -h ou --help
+██║  ██║██║██╔══██║██╔══██╗██║██║   ██║		|   para acessar as opções
+██████╔╝██║██║  ██║██║  ██║██║╚██████╔╝		|
+╚═════╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝ 		|
+=============================================================================
+END
+}
+
+_CRIAR_DIARIO()
+{
+diario=$(date "+%d-%m-%Y")
+data=$(date "+%d/%m/%Y")
+   if [ -e $HOME/.diario/$diario ]
+      then
+      echo -e "\nO diário de hoje ja foi criado, utilize o comando '-e' para editar o diário"
+	else
+	touch $HOME/.diario/$diario
+	echo "Data: ${data}" > $HOME/.diario/$diario
+	${editor} $HOME/.diario/$diario || echo "Não foi possível criar o diário do dia ${diario}"
+   fi
+}
+
+_EDITAR_DIARIO()
+{
+clear
+_LOGO
+#Realiza a listagem de todos os diários existentes
+printf '%s\n' $HOME/.diario/*[^.txt] | grep -n ^ | cut -d/ -f 1,5 | tr / \ 
+read -p "Escolha qual diário que será editado: " editar
+#Seleciona o diario escolhido e abre com o editor definido
+diario_escolhido=$(printf '%s\n' $HOME/.diario/*[^.txt] | grep -n ^ | cut -d/ -f 1,5 | tr / \  | grep ^${editar} | cut -d\  -f 2)
+${editor} $HOME/.diario/"${diario_escolhido}"  && echo -e "\nEdição realizada com sucesso\nDigite a próxima tarefa a ser executada"
+}
+
+_BACKUP()
+{
+clear
+_LOGO
+#Realiza a listagem de todos os diários existentes
+printf '%s\n' $HOME/.diario/*[^.txt] | grep -n ^ | cut -d/ -f 1,5 | tr / \ 
+read -p "Escolha qual diário que será feito o backup: " editar
+#Seleciona o diario escolhido e realiza o backup
+#Se o backup funcionar corretamente o arquivo será renomeado indicando que foi enviado
+diario_escolhido=$(printf '%s\n' $HOME/.diario/*[^.txt] | grep -n ^ | cut -d/ -f 1,5 | tr / \  | grep ^${editar} | cut -d\  -f 2)
+echo "Backup do diário ${diario_escolhido}" | mutt -s "Diário - ${diario_escolhido} [SAVED]" -a $HOME/.diario/${diario_escolhido} -- ${email_backup} \
+&& mv $HOME/.diario/$diario_escolhido $HOME/.diario/"${diario_escolhido}-[SAVED]" && echo -e "\nBackup realizado com sucesso\nDigite a próxima tarefa a ser executada"
+}
+
+_HELP()
+{
+less << END
+
+	Opções
+
+ -h|--help)
+   Imprime este menu de opções.
+
+ -c|--criar)
+   Cria uma página de diário para o dia atual.
+
+ -e|--editar)
+   Edita uma página de diário existente.
+
+ -b|--backup)
+   Seleciona um diário para fazer um backup para um e-mail pré definido.
+
+ -m|--manual)
+   Imprime um manual de explicação sobre como utilizar o programa.
+
+ -s|--sair)
+   Sai do programa.
+END
+}
+
+_MANUAL()
+{
+less << END
+
+	Manual de Funcionamento
+
+   Este programa tem como objetivo criar um diário organizado, utilizando os
+comandos do Shell para realizar tal tarefa.
+   Neste programa é possível criar um diário do dia atual utilizando a opção
+-c ou --criar, o arquivo criado possuirá o nome do dia em que foi criado. Pa-
+ra editar um arquivo basta digitar a opção -e ou --editar, onde será solicita-
+do para escolher o arquivo que será editado. Para realizar o backup, é neces-
+sário digitar a opção -b ou --backup, será necessário selecionar o arquivo que
+será salvo, após a realização do backup o arquivo será renomeado indicando que
+está salvo.
+
+  	Sobre a Função de Backup
+   Esta função é realizada utilizando o programa mutt, ou seja, é necessário
+te-lo instalado e configurado em sua máquina.
+
+	Dúvidas ou Segestões
+   Entre em contato com o seguinte e-mail: felipefernandesgsc@gmail.com
+
+END
+}
+#================================================
+
+#=========================================INICIAL
+
+_LOGO
+   read tarefa # Fornece a opção que deseja acessar
+
+      until [ $tarefa = "--sair" ] &> /dev/null || [ $tarefa = "-s" ] &> /dev/null ; do
+
+	case $tarefa in
+	   -h|--help)
+	   _HELP ;;
+	   -c|--criar)
+	   _CRIAR_DIARIO ;;
+	   -e|--editar)
+	   _EDITAR_DIARIO ;;
+	   -b|--backup)
+	   _BACKUP ;;
+	   -m|--manual)
+	   _MANUAL ;;
+	   *)
+	   echo -e "\nOpção inválida. Digite -h --help para ver as opções válidas.\n" ;;
+	esac
+
+      read tarefa
+      done
+#================================================
