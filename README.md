@@ -1,6 +1,9 @@
    # Diario-Shell-Script
 Realiza a criação e organização de um diário, fornecendo serviço de backup utilizando um e-mail para salvar.
 
+   # Vídeo Explicativo
+   https://youtu.be/l8drqxPH8Sg
+
    # Manual de Funcionamento
    Este programa tem como objetivo criar um diário organizado, utilizando os
 comandos do Shell para realizar tal tarefa.
