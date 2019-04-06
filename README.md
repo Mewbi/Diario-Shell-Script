@@ -19,6 +19,6 @@ está salvo.
    Esta função é realizada utilizando o programa mutt, ou seja, é necessário
 te-lo instalado e configurado em sua máquina.
 
-   # Dúvidas ou Segestões
+   # Dúvidas ou Sugestões
    Entre em contato com o seguinte e-mail: felipefernandesgsc@gmail.com
 
