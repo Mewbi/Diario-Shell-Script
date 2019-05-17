@@ -89,7 +89,7 @@ END
 _CRIAR_DIARIO()
 {
 diario=$(date "+%d-%m-%Y")
-data=$(date "+%d/%m/%Y")
+data=$(date "+%d/%m/%Y - %A - %H:%M")
    if [ -e $HOME/.diario/$diario ]
       then
       echo -e "\nO diário de hoje ja foi criado, utilize o comando '-e' para editar o diário"
@@ -121,7 +121,7 @@ printf '%s\n' $HOME/.diario/*[^.txt] | grep -n ^ | cut -d/ -f 1,5 | tr / \
 read -p "Escolha qual diário que será feito o backup: " editar
 #Seleciona o diario escolhido e realiza o backup
 #Se o backup funcionar corretamente o arquivo será renomeado indicando que foi enviado
-diario_escolhido=$(printf '%s\n' $HOME/.diario/*[^.txt] | grep -n ^ | cut -d/ -f 1,5 | tr / \  | grep ^${editar} | cut -d\  -f 2)
+diario_escolhido=$(printf '%s\n' $HOME/.diario/*[^.txt] | grep -n ^ | cut -d/ -f 1,5 | tr / \  | grep -m1 ^${editar} | cut -d\  -f 2)
 echo "Backup do diário ${diario_escolhido}" | mutt -s "Diário - ${diario_escolhido} [SAVED]" -a $HOME/.diario/${diario_escolhido} -- ${email_backup} \
 && mv $HOME/.diario/$diario_escolhido $HOME/.diario/"${diario_escolhido}-[SAVED]" && echo -e "\nBackup realizado com sucesso\nDigite a próxima tarefa a ser executada"
 }
